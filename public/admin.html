@@ -19,7 +19,7 @@
     <div class="container my-4">
         <ul class="nav nav-tabs mb-4" role="tablist" id="admin-tabs">
             <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#settings-tab">Cài Đặt</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#import-tab">Nhập Hàng & Import XLSX</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#import-tab">Nhập Hàng</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#sell-tab">Bán Hàng / Xuất Kho</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventory-tab">Báo Cáo Tồn Kho</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#expenses-tab">Nhập Chi Phí</button></li>
@@ -43,45 +43,89 @@
                 </div>
             </div>
 
-            <!-- Nhập hàng & Import XLSX -->
+            <!-- Nhập hàng (Bố trí ngang) & Import XLSX ở dưới cùng -->
             <div class="tab-pane fade" id="import-tab">
-                <div class="row">
-                    <div class="col-md-5 card p-4 mb-3">
-                        <h4 class="mb-3" id="inv-form-title">Thêm / Sửa Phụ Tùng Nhập</h4>
-                        <input type="hidden" id="i-id">
-                        <div class="mb-3">
+                <div class="card p-4 mb-4">
+                    <h4 class="mb-3" id="inv-form-title">Thêm / Sửa Phụ Tùng & Phụ Kiện Xe</h4>
+                    <input type="hidden" id="i-id">
+                    
+                    <!-- Lựa chọn loại -->
+                    <div class="mb-3">
+                        <label class="fw-bold text-primary">Loại nhập hàng:</label>
+                        <select id="i-type-option" class="form-select w-50" onchange="toggleItemType()">
+                            <option value="part">Phụ tùng xe</option>
+                            <option value="accessory">Phụ kiện xe</option>
+                        </select>
+                    </div>
+
+                    <!-- Bố trí form nhập hàng nằm ngang -->
+                    <div class="row g-3">
+                        <div class="col-md-3">
                             <label>Thương hiệu:</label>
-                            <select id="i-brand" class="form-select">
-                                <option value="Toyota">Toyota</option><option value="Nissan">Nissan</option><option value="Huyndai">Huyndai</option>
-                                <option value="deawoo">deawoo</option><option value="chevrolet">chevrolet</option><option value="Ford">Ford</option>
-                                <option value="Mitsubishi">Mitsubishi</option><option value="KIA">KIA</option><option value="Thaco">Thaco</option>
-                                <option value="MG">MG</option><option value="Honda">Honda</option><option value="SUZUKI">SUZUKI</option>
-                                <option value="BYD">BYD</option><option value="Zotye">Zotye</option><option value="Basic">Basic</option>
-                                <option value="Isuzu">Isuzu</option><option value="Vifast">Vifast</option><option value="khac">Khác</option>
-                            </select>
+                            <div id="brand-input-container">
+                                <input type="text" id="i-brand" class="form-control" placeholder="Tự nhập thương hiệu...">
+                            </div>
                         </div>
-                        <div class="mb-3"><label>Chủng loại:</label><input type="text" id="i-category" class="form-control"></div>
-                        <div class="mb-3"><label>Tên hàng hoá:</label><input type="text" id="i-item-name" class="form-control"></div>
-                        <div class="mb-3"><label>Mã số phụ tùng:</label><input type="text" id="i-code" class="form-control"></div>
-                        <div class="mb-3"><label>Nhà cung cấp:</label><input type="text" id="i-supplier" class="form-control"></div>
-                        <div class="mb-3"><label>Số lượng:</label><input type="number" id="i-qty" class="form-control" value="1"></div>
-                        <div class="mb-3">
-                            <label>Giá nhập (VNĐ): <small class="text-muted">(Nhập 420 sẽ tự hiểu là 420.000)</small></label>
+                        <div class="col-md-3">
+                            <label>Chủng loại:</label>
+                            <div id="category-container">
+                                <input type="text" id="i-category-text" class="form-control" placeholder="Nhập chủng loại...">
+                                <select id="i-category-select" class="form-select" style="display:none;">
+                                    <option value="Bóng đèn">Bóng đèn</option>
+                                    <option value="Dung dịch bảo dưỡng xe">Dung dịch bảo dưỡng xe</option>
+                                    <option value="Nệm ghế nội thất">Nệm ghế nội thất</option>
+                                    <option value="Thảm lót sàn">Thảm lót sàn</option>
+                                    <option value="Thảm taplo">Thảm taplo</option>
+                                    <option value="Hương nội thất">Hương nội thất</option>
+                                    <option value="Trang trí taplo">Trang trí taplo</option>
+                                    <option value="Màn hình">Màn hình</option>
+                                    <option value="Bọc vô lăng">Bọc vô lăng</option>
+                                    <option value="Bọc nội thất">Bọc nội thất</option>
+                                    <option value="Phụ kiện khác">Phụ kiện khác</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label>Tên hàng hoá:</label>
+                            <input type="text" id="i-item-name" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label>Mã số:</label>
+                            <input type="text" id="i-code" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label>Nhà cung cấp:</label>
+                            <input type="text" id="i-supplier" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label>Số lượng:</label>
+                            <input type="number" id="i-qty" class="form-control" value="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label>Đơn vị tính:</label>
+                            <input type="text" id="i-unit" class="form-control" placeholder="Cái, bộ, hộp...">
+                        </div>
+                        <div class="col-md-3">
+                            <label>Giá nhập (VNĐ):</label>
                             <input type="number" id="i-import-price" class="form-control" onblur="autoMultiplyThousand(this)">
                         </div>
-                        <div class="mb-3">
-                            <label>Giá bán (VNĐ): <small class="text-muted">(Nhập 420 sẽ tự hiểu là 420.000)</small></label>
+                        <div class="col-md-3">
+                            <label>Giá bán (VNĐ):</label>
                             <input type="number" id="i-sell-price" class="form-control" onblur="autoMultiplyThousand(this)">
                         </div>
-                        <button class="btn btn-success" onclick="saveInventoryItem()">Lưu Phụ Tùng</button>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-success" onclick="saveInventoryItem()">Lưu Phụ Tùng / Phụ Kiện</button>
                         <button class="btn btn-secondary ms-2" onclick="resetInventoryForm()" id="i-cancel" style="display:none;">Hủy</button>
                     </div>
-                    <div class="col-md-7 card p-4 mb-3">
-                        <h4 class="mb-3 text-success">📥 Import Danh Sách Từ File XLSX</h4>
-                        <input type="file" id="excel-file" class="form-control mb-3" accept=".xlsx, .xls">
-                        <button class="btn btn-outline-success" onclick="importExcel()">Tải Dữ Liệu Lên Hệ Thống</button>
-                        <small class="text-muted mt-2 d-block">File Excel cần các cột khớp: <code>brand</code>, <code>category</code>, <code>item_name</code>, <code>part_code</code>, <code>supplier</code>, <code>quantity</code>, <code>import_price</code>, <code>sell_price</code>.</small>
-                    </div>
+                </div>
+
+                <!-- Import Danh Sách Từ File XLSX ở dưới cùng -->
+                <div class="card p-4">
+                    <h4 class="mb-3 text-success">📥 Import Danh Sách Từ File XLSX</h4>
+                    <input type="file" id="excel-file" class="form-control mb-3" accept=".xlsx, .xls">
+                    <button class="btn btn-outline-success" onclick="importExcel()">Tải Dữ Liệu Lên Hệ Thống</button>
+                    <small class="text-muted mt-2 d-block">File Excel cần các cột khớp: <code>brand</code>, <code>category</code>, <code>item_name</code>, <code>part_code</code>, <code>supplier</code>, <code>quantity</code>, <code>unit</code>, <code>import_price</code>, <code>sell_price</code>.</small>
                 </div>
             </div>
 
@@ -101,7 +145,7 @@
                     </div>
                     <div class="table-responsive">
                         <table class="table table-bordered bg-white align-middle">
-                            <thead><tr><th>Chọn</th><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>Tồn kho</th><th>Giá bán</th><th>SL Bán</th></tr></thead>
+                            <thead><tr><th>Chọn</th><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>ĐVT</th><th>Tồn kho</th><th>Giá bán</th><th>SL Bán</th></tr></thead>
                             <tbody id="sell-table-body"></tbody>
                         </table>
                     </div>
@@ -112,7 +156,7 @@
             <div class="tab-pane fade" id="inventory-tab">
                 <div class="card p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0">Báo Cáo Tồn Kho Phụ Tùng</h4>
+                        <h4 class="mb-0">Báo Cáo Tồn Kho Phụ Tùng & Phụ Kiện</h4>
                         <div style="width: 280px;">
                             <select id="inv-filter-status" class="form-select" onchange="renderInventoryTable()">
                                 <option value="all">Xem tất cả (SL từ 1 trở lên)</option>
@@ -123,7 +167,7 @@
                     </div>
                     <div class="table-responsive">
                         <table class="table table-bordered bg-white align-middle">
-                            <thead><tr><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>Nhà cung cấp</th><th>Số lượng tồn</th><th>Giá Nhập</th><th>Giá Bán</th><th>Thao tác</th></tr></thead>
+                            <thead><tr><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>Nhà cung cấp</th><th>ĐVT</th><th>Số lượng tồn</th><th>Giá Nhập</th><th>Giá Bán</th><th>Thao tác</th></tr></thead>
                             <tbody id="inventory-table-body"></tbody>
                         </table>
                     </div>
@@ -208,11 +252,23 @@
         let cachedInventory = [];
         let cachedReport = {};
 
-        // Hàm tự động thêm 3 số 0 khi người dùng nhập giá (ví dụ nhập 420 thành 420000)
         function autoMultiplyThousand(input) {
             let val = parseFloat(input.value);
             if (!isNaN(val) && val > 0 && val < 1000) {
                 input.value = val * 1000;
+            }
+        }
+
+        function toggleItemType() {
+            const type = document.getElementById('i-type-option').value;
+            const catText = document.getElementById('i-category-text');
+            const catSelect = document.getElementById('i-category-select');
+            if (type === 'part') {
+                catText.style.display = 'block';
+                catSelect.style.display = 'none';
+            } else {
+                catText.style.display = 'none';
+                catSelect.style.display = 'block';
             }
         }
 
@@ -266,6 +322,7 @@
                         <td><b>${i.item_name || ''}</b></td>
                         <td><code>${i.part_code || ''}</code></td>
                         <td>${i.supplier || ''}</td>
+                        <td>${i.unit || 'Cái'}</td>
                         <td><b>${i.quantity}</b></td>
                         <td>${Number(i.import_price).toLocaleString()}đ</td>
                         <td>${Number(i.sell_price).toLocaleString()}đ</td>
@@ -293,6 +350,7 @@
                     <td>${i.category || ''}</td>
                     <td><b>${i.item_name || ''}</b></td>
                     <td><code>${i.part_code || ''}</code></td>
+                    <td>${i.unit || 'Cái'}</td>
                     <td>${i.quantity}</td>
                     <td class="text-danger fw-bold">${Number(i.sell_price).toLocaleString()}đ</td>
                     <td><input type="number" class="form-control form-control-sm sell-qty" data-id="${i.id}" value="1" min="1" max="${i.quantity}" style="width: 80px;"></td>
@@ -326,51 +384,70 @@
         }
 
         async function saveInventoryItem() {
+            const typeOption = document.getElementById('i-type-option').value;
+            const category = typeOption === 'part' ? document.getElementById('i-category-text').value : document.getElementById('i-category-select').value;
+            
             const data = {
                 id: document.getElementById('i-id').value,
                 brand: document.getElementById('i-brand').value,
-                category: document.getElementById('i-category').value,
+                category: category,
                 item_name: document.getElementById('i-item-name').value,
                 part_code: document.getElementById('i-code').value,
                 supplier: document.getElementById('i-supplier').value,
                 quantity: document.getElementById('i-qty').value,
+                unit: document.getElementById('i-unit').value || 'Cái',
                 import_price: document.getElementById('i-import-price').value,
                 sell_price: document.getElementById('i-sell-price').value
             };
             await fetch('/api/inventory/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-            alert('Lưu phụ tùng thành công!');
+            alert('Lưu thành công!');
             resetInventoryForm(); loadAll();
         }
 
         function editInventory(i) {
             document.getElementById('i-id').value = i.id;
             document.getElementById('i-brand').value = i.brand;
-            document.getElementById('i-category').value = i.category || '';
             document.getElementById('i-item-name').value = i.item_name || '';
             document.getElementById('i-code').value = i.part_code || '';
             document.getElementById('i-supplier').value = i.supplier || '';
             document.getElementById('i-qty').value = i.quantity;
+            document.getElementById('i-unit').value = i.unit || 'Cái';
             document.getElementById('i-import-price').value = i.import_price;
             document.getElementById('i-sell-price').value = i.sell_price;
-            document.getElementById('i-form-title').innerText = 'Sửa Phụ Tùng';
+            
+            // Xác định xem thuộc Phụ tùng hay Phụ kiện
+            const accessories = ["Bóng đèn", "Dung dịch bảo dưỡng xe", "Nệm ghế nội thất", "Thảm lót sàn", "Thảm taplo", "Hương nội thất", "Trang trí taplo", "Màn hình", "Bọc vô lăng", "Bọc nội thất", "Phụ kiện khác"];
+            if (accessories.includes(i.category)) {
+                document.getElementById('i-type-option').value = 'accessory';
+                toggleItemType();
+                document.getElementById('i-category-select').value = i.category;
+            } else {
+                document.getElementById('i-type-option').value = 'part';
+                toggleItemType();
+                document.getElementById('i-category-text').value = i.category || '';
+            }
+
+            document.getElementById('i-form-title').innerText = 'Sửa Phụ Tùng / Phụ Kiện';
             document.getElementById('i-cancel').style.display = 'inline-block';
         }
 
         function resetInventoryForm() {
             document.getElementById('i-id').value = '';
-            document.getElementById('i-category').value = '';
+            document.getElementById('i-brand').value = '';
+            document.getElementById('i-category-text').value = '';
             document.getElementById('i-item-name').value = '';
             document.getElementById('i-code').value = '';
             document.getElementById('i-supplier').value = '';
             document.getElementById('i-qty').value = '1';
+            document.getElementById('i-unit').value = '';
             document.getElementById('i-import-price').value = '';
             document.getElementById('i-sell-price').value = '';
-            document.getElementById('i-form-title').innerText = 'Thêm / Sửa Phụ Tùng Nhập';
+            document.getElementById('i-form-title').innerText = 'Thêm / Sửa Phụ Tùng & Phụ Kiện Xe';
             document.getElementById('i-cancel').style.display = 'none';
         }
 
         async function deleteInventory(id) {
-            if(confirm('Xóa phụ tùng này?')) { await fetch(`/api/inventory/${id}`, { method: 'DELETE' }); loadAll(); }
+            if(confirm('Xóa mục này?')) { await fetch(`/api/inventory/${id}`, { method: 'DELETE' }); loadAll(); }
         }
 
         async function importExcel() {
@@ -393,6 +470,7 @@
                             part_code: row.part_code || '',
                             supplier: row.supplier || '',
                             quantity: row.quantity || 1,
+                            unit: row.unit || 'Cái',
                             import_price: row.import_price || 0,
                             sell_price: row.sell_price || 0
                         })
