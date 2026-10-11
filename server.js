@@ -10,17 +10,24 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Kết nối tự động nhận từ biến môi trường DATABASE_URL trên Render (đã cấu hình Supabase)
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-    family: 4
+    ssl: {
+        rejectUnauthorized: false // Bắt buộc khi kết nối Supabase từ bên ngoài
+    },
+    family: 4 // Ép buộc sử dụng IPv4 để tránh lỗi kết nối mạng
 });
 
 pool.connect((err) => {
-    if (err) console.error('Lỗi kết nối Database:', err.stack);
-    else console.log('Đã kết nối thành công với Database!');
+    if (err) {
+        console.error('Lỗi kết nối Database Supabase:', err.stack);
+    } else {
+        console.log('Đã kết nối thành công với Supabase!');
+    }
 });
 
+// Khởi tạo các bảng dữ liệu trên Supabase nếu chưa tồn tại
 const initDatabase = async () => {
     try {
         await pool.query(`CREATE TABLE IF NOT EXISTS users (
@@ -69,12 +76,13 @@ const initDatabase = async () => {
             created_date TEXT
         )`);
 
+        // Thêm dữ liệu mặc định nếu bảng users trống
         const userCountRes = await pool.query(`SELECT COUNT(*) as count FROM users`);
         if (userCountRes.rows[0] && parseInt(userCountRes.rows[0].count) === 0) {
             await pool.query(`INSERT INTO users (username, password, role) VALUES ('admin', '123456', 'admin')`);
-            await pool.query(`INSERT INTO settings (name, address, phone, qr_code, banners) VALUES ('Cửa Hàng Phụ Tùng Ô Tô Việt', '123 Nguyễn Văn Cừ, TP.HCM', '0909123456', 'https://api.vietqr.io/image/970422-123456789-n5398FP.jpg', '["https://images.unsplash.com/photo-1486006920555-c77dce18193b"]')`);
+            await pool.query(`INSERT INTO settings (name, address, phone, qr_code, banners) VALUES ('Cửa Hàng Phụ Tùng Ô Tô Việt', '123 Nguyễn Văn Cừ, Cần Thơ', '0909123456', 'https://api.vietqr.io/image/970422-123456789-n5398FP.jpg', '["https://images.unsplash.com/photo-1486006920555-c77dce18193b"]')`);
         }
-        console.log('Khởi tạo CSDL hoàn tất.');
+        console.log('Khởi tạo cấu trúc CSDL trên Supabase hoàn tất.');
     } catch (err) {
         console.error('Lỗi khởi tạo CSDL:', err);
     }
@@ -82,6 +90,7 @@ const initDatabase = async () => {
 
 initDatabase();
 
+// --- API Users & Auth ---
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     try {
@@ -130,6 +139,7 @@ app.delete('/api/users/:id', async (req, res) => {
     }
 });
 
+// --- API Settings ---
 app.get('/api/settings', async (req, res) => {
     try {
         const result = await pool.query(`SELECT * FROM settings LIMIT 1`);
@@ -150,6 +160,7 @@ app.post('/api/settings', async (req, res) => {
     }
 });
 
+// --- API Inventory ---
 app.get('/api/inventory', async (req, res) => {
     const { search } = req.query;
     try {
@@ -193,6 +204,7 @@ app.delete('/api/inventory/:id', async (req, res) => {
     }
 });
 
+// --- API Sell ---
 app.post('/api/inventory/sell', async (req, res) => {
     const { items, payment_method } = req.body;
     const created_date = new Date().toISOString().split('T')[0];
@@ -235,6 +247,7 @@ app.post('/api/inventory/sell', async (req, res) => {
     }
 });
 
+// --- API Expenses ---
 app.get('/api/expenses', async (req, res) => {
     try {
         const result = await pool.query(`SELECT * FROM expenses ORDER BY date DESC`);
@@ -255,6 +268,7 @@ app.post('/api/expenses', async (req, res) => {
     }
 });
 
+// --- API Reports ---
 app.get('/api/reports', async (req, res) => {
     const { start_date, end_date } = req.query;
     try {
