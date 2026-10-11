@@ -22,28 +22,48 @@
         </div>
     </nav>
 
-    <!-- Banner di chuyển mỗi 5 giây -->
+    <!-- Banner -->
     <div class="container my-3" id="banner-section">
         <div id="carouselBanners" class="carousel slide shadow-sm" data-bs-ride="carousel" data-bs-interval="5000">
             <div class="carousel-inner" id="carousel-inner"></div>
         </div>
     </div>
 
-    <!-- Tìm kiếm hàng hóa & giá bán -->
+    <!-- Tra cứu phụ tùng & chọn theo chủng loại -->
     <div class="container my-4">
         <div class="card p-4 shadow-sm mb-4">
-            <h4 class="mb-3 fw-bold text-primary">🔍 Tra Cứu Phụ Tùng & Giá Bán Nhanh</h4>
-            <div class="input-group mb-3">
-                <input type="text" id="search-input" class="form-control" placeholder="Nhập tên, mã số, thương hiệu hoặc nhà cung cấp...">
-                <button class="btn btn-primary" onclick="searchParts()">Tìm Kiếm</button>
+            <h4 class="mb-3 fw-bold text-primary">🔍 Tra Cứu Phụ Tùng & Phụ Kiện Ô Tô</h4>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <input type="text" id="search-input" class="form-control" placeholder="Nhập tên, mã số, thương hiệu hoặc nhà cung cấp..." oninput="searchParts()">
+                </div>
+                <div class="col-md-4">
+                    <select id="category-filter" class="form-select" onchange="searchParts()">
+                        <option value="">-- Lọc theo chủng loại hàng hóa --</option>
+                        <option value="Bóng đèn">Bóng đèn</option>
+                        <option value="Dung dịch bảo dưỡng xe">Dung dịch bảo dưỡng xe</option>
+                        <option value="Nệm ghế nội thất">Nệm ghế nội thất</option>
+                        <option value="Thảm lót sàn">Thảm lót sàn</option>
+                        <option value="Thảm taplo">Thảm taplo</option>
+                        <option value="Hương nội thất">Hương nội thất</option>
+                        <option value="Trang trí taplo">Trang trí taplo</option>
+                        <option value="Màn hình">Màn hình</option>
+                        <option value="Bọc vô lăng">Bọc vô lăng</option>
+                        <option value="Bọc nội thất">Bọc nội thất</option>
+                        <option value="Phụ kiện khác">Phụ kiện khác</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" onclick="searchParts()">Tìm Kiếm</button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table table-bordered table-striped bg-white align-middle">
                     <thead class="table-dark">
-                        <tr><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>Nhà cung cấp</th><th>Tồn kho</th><th>Giá Bán</th></tr>
+                        <tr><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>Nhà cung cấp</th><th>ĐVT</th><th>Tồn kho</th><th>Giá Bán</th></tr>
                     </thead>
                     <tbody id="public-search-results">
-                        <tr><td colspan="7" class="text-center text-muted">Nhập thông tin để tìm kiếm phụ tùng...</td></tr>
+                        <tr><td colspan="8" class="text-center text-muted">Nhập thông tin để tìm kiếm phụ tùng...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -92,10 +112,17 @@
 
         async function searchParts() {
             const keyword = document.getElementById('search-input').value;
+            const selectedCat = document.getElementById('category-filter').value;
+            
             const res = await fetch(`/api/inventory?search=${encodeURIComponent(keyword)}`);
-            const data = await res.json();
+            let data = await res.json();
+
+            if (selectedCat) {
+                data = data.filter(i => i.category === selectedCat);
+            }
+
             document.getElementById('public-search-results').innerHTML = data.length === 0 ? 
-                `<tr><td colspan="7" class="text-center text-muted">Không tìm thấy phụ tùng phù hợp</td></tr>` :
+                `<tr><td colspan="8" class="text-center text-muted">Không tìm thấy phụ tùng phù hợp</td></tr>` :
                 data.map(i => `
                     <tr>
                         <td><b>${i.brand}</b></td>
@@ -103,6 +130,7 @@
                         <td><b>${i.item_name || ''}</b></td>
                         <td><code>${i.part_code || ''}</code></td>
                         <td>${i.supplier || ''}</td>
+                        <td>${i.unit || 'Cái'}</td>
                         <td><span class="badge ${i.quantity > 1 ? 'bg-success' : i.quantity === 1 ? 'bg-warning text-dark' : 'bg-danger'}">${i.quantity}</span></td>
                         <td class="fw-bold text-danger">${Number(i.sell_price).toLocaleString()}đ</td>
                     </tr>
