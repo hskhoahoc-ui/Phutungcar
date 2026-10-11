@@ -29,28 +29,24 @@
         </div>
     </div>
 
-    <!-- Tra cứu phụ tùng & chọn theo chủng loại -->
+    <!-- Tra cứu phụ tùng & chọn lọc -->
     <div class="container my-4">
         <div class="card p-4 shadow-sm mb-4">
             <h4 class="mb-3 fw-bold text-primary">🔍 Tra Cứu Phụ Tùng & Phụ Kiện Ô Tô</h4>
             <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                    <input type="text" id="search-input" class="form-control" placeholder="Nhập tên, mã số, thương hiệu hoặc nhà cung cấp..." oninput="searchParts()">
+                <div class="col-md-3">
+                    <input type="text" id="search-input" class="form-control" placeholder="Nhập tên, mã số..." oninput="searchParts()">
+                </div>
+                <div class="col-md-3">
+                    <select id="item-type-select" class="form-select" onchange="onTypeChange()">
+                        <option value="">-- Chọn Loại Hàng Hoá --</option>
+                        <option value="part">Phụ tùng</option>
+                        <option value="accessory">Phụ kiện</option>
+                    </select>
                 </div>
                 <div class="col-md-4">
-                    <select id="category-filter" class="form-select" onchange="searchParts()">
-                        <option value="">-- Lọc theo chủng loại hàng hóa --</option>
-                        <option value="Bóng đèn">Bóng đèn</option>
-                        <option value="Dung dịch bảo dưỡng xe">Dung dịch bảo dưỡng xe</option>
-                        <option value="Nệm ghế nội thất">Nệm ghế nội thất</option>
-                        <option value="Thảm lót sàn">Thảm lót sàn</option>
-                        <option value="Thảm taplo">Thảm taplo</option>
-                        <option value="Hương nội thất">Hương nội thất</option>
-                        <option value="Trang trí taplo">Trang trí taplo</option>
-                        <option value="Màn hình">Màn hình</option>
-                        <option value="Bọc vô lăng">Bọc vô lăng</option>
-                        <option value="Bọc nội thất">Bọc nội thất</option>
-                        <option value="Phụ kiện khác">Phụ kiện khác</option>
+                    <select id="dynamic-filter" class="form-select" onchange="searchParts()" disabled>
+                        <option value="">-- Vui lòng chọn loại hàng hoá trước --</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -86,6 +82,21 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const accessoryList = [
+            "Bóng đèn", "Dung dịch bảo dưỡng xe", "Nệm ghế nội thất", 
+            "Thảm lót sàn", "Thảm taplo", "Hương nội thất", 
+            "Trang trí taplo", "Màn hình", "Bọc vô lăng", 
+            "Bọc nội thất", "Phụ kiện khác"
+        ];
+        
+        const brandList = [
+            "Toyota", "Nissan", "Huyndai", "deawoo", "chevrolet", 
+            "Ford", "Mitsubishi", "KIA", "Thaco", "MG", "Honda", 
+            "SUZUKI", "BYD", "Zotye", "Basic", "Isuzu", "Vifast", "Khác"
+        ];
+
+        let allInventory = [];
+
         async function init() {
             const resSet = await fetch('/api/settings');
             const settings = await resSet.json();
@@ -106,24 +117,56 @@
                     `).join('');
                 }
             } catch(e) {}
+            
+            const resInv = await fetch('/api/inventory');
+            allInventory = await resInv.json();
+
             checkUserRole();
             searchParts();
         }
 
-        async function searchParts() {
-            const keyword = document.getElementById('search-input').value;
-            const selectedCat = document.getElementById('category-filter').value;
-            
-            const res = await fetch(`/api/inventory?search=${encodeURIComponent(keyword)}`);
-            let data = await res.json();
+        function onTypeChange() {
+            const type = document.getElementById('item-type-select').value;
+            const filterSelect = document.getElementById('dynamic-filter');
+            filterSelect.disabled = false;
+            filterSelect.innerHTML = '<option value="">-- Tất cả --</option>';
 
-            if (selectedCat) {
-                data = data.filter(i => i.category === selectedCat);
+            if (type === 'part') {
+                brandList.forEach(b => {
+                    filterSelect.innerHTML += `<option value="${b}">${b}</option>`;
+                });
+            } else if (type === 'accessory') {
+                accessoryList.forEach(a => {
+                    filterSelect.innerHTML += `<option value="${a}">${a}</option>`;
+                });
+            } else {
+                filterSelect.disabled = true;
+                filterSelect.innerHTML = '<option value="">-- Vui lòng chọn loại hàng hoá trước --</option>';
+            }
+            searchParts();
+        }
+
+        async function searchParts() {
+            const keyword = document.getElementById('search-input').value.toLowerCase();
+            const type = document.getElementById('item-type-select').value;
+            const selectedVal = document.getElementById('dynamic-filter').value;
+
+            let filtered = allInventory.filter(i => 
+                (i.brand && i.brand.toLowerCase().includes(keyword)) || 
+                (i.part_code && i.part_code.toLowerCase().includes(keyword)) || 
+                (i.item_name && i.item_name.toLowerCase().includes(keyword)) ||
+                (i.category && i.category.toLowerCase().includes(keyword))
+            );
+
+            if (type === 'part' && selectedVal) {
+                filtered = filtered.filter(i => i.brand === selectedVal);
+            } else if (type === 'accessory' && selectedVal) {
+                filtered = filtered.filter(i => i.category === selectedVal);
             }
 
-            document.getElementById('public-search-results').innerHTML = data.length === 0 ? 
+            document.getElementById('public-search-results').innerHTML = filtered.length === 0 ? 
                 `<tr><td colspan="8" class="text-center text-muted">Không tìm thấy phụ tùng phù hợp</td></tr>` :
-                data.map(i => `
+                filtered.map(i => `
                     <tr>
                         <td><b>${i.brand}</b></td>
                         <td>${i.category || ''}</td>
