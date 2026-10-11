@@ -1,7 +1,7 @@
 {
-  "name": "coffee-shop-management",
+  "name": "auto-parts-management",
   "version": "1.0.0",
-  "description": "Ứng dụng quản lý Cửa hàng phụ tùng Oto toàn diện",
+  "description": "Ứng dụng quản lý phụ tùng xe ô tô toàn diện",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
