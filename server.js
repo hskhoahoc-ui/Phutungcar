@@ -10,13 +10,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Kết nối tự động nhận từ biến môi trường DATABASE_URL trên Render (đã cấu hình Supabase)
+// Kết nối tự động nhận từ biến môi trường DATABASE_URL trên Render (Supabase PostgreSQL)
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-        rejectUnauthorized: false // Bắt buộc khi kết nối Supabase từ bên ngoài
+        rejectUnauthorized: false
     },
-    family: 4 // Ép buộc sử dụng IPv4 để tránh lỗi kết nối mạng
+    family: 4
 });
 
 pool.connect((err) => {
@@ -54,6 +54,7 @@ const initDatabase = async () => {
             part_code TEXT,
             supplier TEXT,
             quantity INTEGER,
+            unit TEXT DEFAULT 'Cái',
             import_price REAL,
             sell_price REAL,
             import_date TEXT
@@ -80,7 +81,7 @@ const initDatabase = async () => {
         const userCountRes = await pool.query(`SELECT COUNT(*) as count FROM users`);
         if (userCountRes.rows[0] && parseInt(userCountRes.rows[0].count) === 0) {
             await pool.query(`INSERT INTO users (username, password, role) VALUES ('admin', '123456', 'admin')`);
-            await pool.query(`INSERT INTO settings (name, address, phone, qr_code, banners) VALUES ('Cửa Hàng Phụ Tùng Ô Tô Việt', '123 Nguyễn Văn Cừ, Cần Thơ', '0909123456', 'https://api.vietqr.io/image/970422-123456789-n5398FP.jpg', '["https://images.unsplash.com/photo-1486006920555-c77dce18193b"]')`);
+            await pool.query(`INSERT INTO settings (name, address, phone, qr_code, banners) VALUES ('Cửa Hàng Phụ Tùng & Phụ Kiện Ô Tô', '123 Nguyễn Văn Cừ, Cần Thơ', '0909123456', 'https://api.vietqr.io/image/970422-123456789-n5398FP.jpg', '["https://images.unsplash.com/photo-1486006920555-c77dce18193b"]')`);
         }
         console.log('Khởi tạo cấu trúc CSDL trên Supabase hoàn tất.');
     } catch (err) {
@@ -179,15 +180,15 @@ app.get('/api/inventory', async (req, res) => {
 });
 
 app.post('/api/inventory/save', async (req, res) => {
-    const { id, brand, category, item_name, part_code, supplier, quantity, import_price, sell_price } = req.body;
+    const { id, brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price } = req.body;
     const import_date = new Date().toISOString().split('T')[0];
     try {
         if (id) {
-            await pool.query(`UPDATE inventory SET brand = $1, category = $2, item_name = $3, part_code = $4, supplier = $5, quantity = $6, import_price = $7, sell_price = $8 WHERE id = $9`,
-                [brand, category, item_name, part_code, supplier, quantity, import_price, sell_price, id]);
+            await pool.query(`UPDATE inventory SET brand = $1, category = $2, item_name = $3, part_code = $4, supplier = $5, quantity = $6, unit = $7, import_price = $8, sell_price = $9 WHERE id = $10`,
+                [brand, category, item_name, part_code, supplier, quantity, unit || 'Cái', import_price, sell_price, id]);
         } else {
-            await pool.query(`INSERT INTO inventory (brand, category, item_name, part_code, supplier, quantity, import_price, sell_price, import_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-                [brand, category, item_name, part_code, supplier, quantity, import_price, sell_price, import_date]);
+            await pool.query(`INSERT INTO inventory (brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price, import_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                [brand, category, item_name, part_code, supplier, quantity, unit || 'Cái', import_price, sell_price, import_date]);
         }
         res.json({ success: true });
     } catch (err) {
@@ -230,6 +231,7 @@ app.post('/api/inventory/sell', async (req, res) => {
                 item_name: inv.item_name,
                 brand: inv.brand,
                 category: inv.category,
+                unit: inv.unit,
                 quantity: item.quantity_sold,
                 sell_price: inv.sell_price,
                 subTotal
