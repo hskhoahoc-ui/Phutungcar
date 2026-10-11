@@ -6,8 +6,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        .row-out { background-color: #f8d7da !important; } /* Đỏ khi hết hàng (SL = 0) */
-        .row-low { background-color: #fff3cd !important; } /* Vàng khi ít hàng (SL = 1 hoặc 2) */
+        .row-out { background-color: #f8d7da !important; }
+        .row-low { background-color: #fff3cd !important; }
     </style>
 </head>
 <body class="bg-light">
@@ -65,8 +65,14 @@
                         <div class="mb-3"><label>Mã số phụ tùng:</label><input type="text" id="i-code" class="form-control"></div>
                         <div class="mb-3"><label>Nhà cung cấp:</label><input type="text" id="i-supplier" class="form-control"></div>
                         <div class="mb-3"><label>Số lượng:</label><input type="number" id="i-qty" class="form-control" value="1"></div>
-                        <div class="mb-3"><label>Giá nhập (VNĐ):</label><input type="number" id="i-import-price" class="form-control"></div>
-                        <div class="mb-3"><label>Giá bán (VNĐ):</label><input type="number" id="i-sell-price" class="form-control"></div>
+                        <div class="mb-3">
+                            <label>Giá nhập (VNĐ): <small class="text-muted">(Nhập 420 sẽ tự hiểu là 420.000)</small></label>
+                            <input type="number" id="i-import-price" class="form-control" onblur="autoMultiplyThousand(this)">
+                        </div>
+                        <div class="mb-3">
+                            <label>Giá bán (VNĐ): <small class="text-muted">(Nhập 420 sẽ tự hiểu là 420.000)</small></label>
+                            <input type="number" id="i-sell-price" class="form-control" onblur="autoMultiplyThousand(this)">
+                        </div>
                         <button class="btn btn-success" onclick="saveInventoryItem()">Lưu Phụ Tùng</button>
                         <button class="btn btn-secondary ms-2" onclick="resetInventoryForm()" id="i-cancel" style="display:none;">Hủy</button>
                     </div>
@@ -201,6 +207,14 @@
     <script>
         let cachedInventory = [];
         let cachedReport = {};
+
+        // Hàm tự động thêm 3 số 0 khi người dùng nhập giá (ví dụ nhập 420 thành 420000)
+        function autoMultiplyThousand(input) {
+            let val = parseFloat(input.value);
+            if (!isNaN(val) && val > 0 && val < 1000) {
+                input.value = val * 1000;
+            }
+        }
 
         function checkRole() {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
