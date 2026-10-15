@@ -2,9 +2,14 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
+const multer = require('multer');
+const XLSX = require('xlsx');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Cấu hình multer để nhận file upload trực tiếp qua form-data
+const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(cors());
 app.use(express.json());
@@ -196,6 +201,46 @@ app.post('/api/inventory/save', async (req, res) => {
     }
 });
 
+// Thêm API xử lý Import file Excel (.xlsx) trực tiếp trên server hỗ trợ chuẩn hóa cột tiếng Việt
+app.post('/api/inventory/import', upload.single('file'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'Chưa tải lên file Excel!' });
+    }
+    try {
+        const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rawData = XLSX.utils.sheet_to_json(worksheet);
+
+        const import_date = new Date().toISOString().split('T')[0];
+        let importedCount = 0;
+
+        for (let row of rawData) {
+            const brand = row['Thương hiệu'] || row['brand'] || '';
+            const category = row['Chủng loại'] || row['category'] || '';
+            const item_name = row['Tên hàng hoá'] || row['item_name'] || '';
+            const part_code = row['Mã số'] || row['part_code'] || '';
+            const supplier = row['Nhà cung cấp'] || row['supplier'] || '';
+            const quantity = Number(row['Số lượng'] || row['quantity'] || 0);
+            const unit = row['Đơn vị tính'] || row['unit'] || 'Cái';
+            const import_price = Number(row['Giá nhập'] || row['import_price'] || 0);
+            const sell_price = Number(row['Giá bán'] || row['sell_price'] || 0);
+
+            if (part_code || item_name) {
+                await pool.query(
+                    `INSERT INTO inventory (brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price, import_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                    [brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price, import_date]
+                );
+                importedCount++;
+            }
+        }
+
+        res.json({ success: true, message: `Đã import thành công ${importedCount} sản phẩm vào tồn kho!` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.delete('/api/inventory/:id', async (req, res) => {
     try {
         await pool.query(`DELETE FROM inventory WHERE id = $1`, [req.params.id]);
@@ -270,12 +315,13 @@ app.post('/api/expenses', async (req, res) => {
     }
 });
 
-// --- API Reports ---
+// --- API Reports (Đã bổ sung tổng giá trị vốn sản phẩm nhập kho) ---
 app.get('/api/reports', async (req, res) => {
     const { start_date, end_date } = req.query;
     try {
         let billQuery = `SELECT SUM(total_amount) as total_revenue, SUM(total_import_cost) as total_import_sold FROM bills`;
         let expQuery = `SELECT SUM(amount) as total_expense FROM expenses`;
+        let invQuery = `SELECT SUM(import_price * quantity) as total_import_inventory FROM inventory`;
         let params = [];
 
         if (start_date && end_date) {
@@ -286,13 +332,21 @@ app.get('/api/reports', async (req, res) => {
 
         const billRes = await pool.query(billQuery, params);
         const expRes = await pool.query(expQuery, params);
+        const invRes = await pool.query(invQuery);
 
         const totalRevenue = Number(billRes.rows[0]?.total_revenue || 0);
         const totalImportSold = Number(billRes.rows[0]?.total_import_sold || 0);
         const totalExpense = Number(expRes.rows[0]?.total_expense || 0);
+        const totalImportInventory = Number(invRes.rows[0]?.total_import_inventory || 0);
         const netProfit = totalRevenue - totalImportSold - totalExpense;
 
-        res.json({ totalRevenue, totalImportSold, totalExpense, netProfit });
+        res.json({ 
+            totalRevenue, 
+            totalImportSold, 
+            totalExpense, 
+            totalImportInventory, // Trả về thông tin tổng vốn sản phẩm nhập/tồn kho
+            netProfit 
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
