@@ -216,7 +216,6 @@
                         <div class="col-md-3"><div class="p-3 bg-light border rounded"><h6 class="text-muted">TỔNG LỢI NHUẬN</h6><h4 class="text-success fw-bold" id="rep-net">0đ</h4></div></div>
                     </div>
 
-                    <!-- Doanh thu chi tiết theo hình thức thanh toán -->
                     <div class="row mb-4">
                         <div class="col-md-12">
                             <h5 class="fw-bold">Chi Tiết Doanh Thu Theo Hình Thức Thanh Toán</h5>
@@ -228,7 +227,6 @@
                         </div>
                     </div>
 
-                    <!-- Bảng chi tiết các đơn bán trong kỳ -->
                     <h5 class="fw-bold mb-2">📋 Chi Tiết Các Đơn Bán Hàng Trong Kỳ</h5>
                     <div class="table-responsive mb-4">
                         <table class="table table-sm table-bordered bg-white align-middle">
@@ -237,7 +235,6 @@
                         </table>
                     </div>
 
-                    <!-- Bảng chi tiết các sản phẩm nhập kho trong kỳ -->
                     <h5 class="fw-bold mb-2">📦 Chi Tiết Các Sản Phẩm Nhập Kho Trong Kỳ</h5>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered bg-white align-middle">
@@ -533,7 +530,6 @@
             document.getElementById('method-transfer').innerText = Number(methods['Chuyển khoản'] || 0).toLocaleString() + 'đ';
             document.getElementById('method-debt').innerText = Number(methods['Công nợ'] || 0).toLocaleString() + 'đ';
 
-            // Hiển thị danh sách các đơn bán chi tiết
             const bills = cachedReport.billsList || [];
             document.getElementById('report-bills-body').innerHTML = bills.length === 0 ? 
                 `<tr><td colspan="6" class="text-center text-muted">Không có đơn bán nào trong khoảng thời gian này</td></tr>` :
@@ -553,7 +549,6 @@
                     `;
                 }).join('');
 
-            // Hiển thị danh sách các sản phẩm nhập kho chi tiết
             const imports = cachedReport.importList || [];
             document.getElementById('report-imports-body').innerHTML = imports.length === 0 ?
                 `<tr><td colspan="8" class="text-center text-muted">Không có sản phẩm nhập kho nào trong khoảng thời gian này</td></tr>` :
