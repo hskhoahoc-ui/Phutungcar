@@ -69,7 +69,6 @@ const initDatabase = async () => {
             date TEXT
         )`);
 
-        // Bảng quản lý đơn hàng xuất bán (có lưu thông tin khách hàng và hình thức thanh toán)
         await pool.query(`CREATE TABLE IF NOT EXISTS bills (
             id SERIAL PRIMARY KEY,
             customer_name TEXT DEFAULT 'Khách lẻ',
@@ -200,7 +199,7 @@ app.post('/api/inventory/save', async (req, res) => {
     }
 });
 
-// API Import file Excel (.xlsx) với cột đầu tiên nhận diện loại (Phụ tùng xe / Phụ kiện)
+// API Import file Excel hỗ trợ đọc cột đầu tiên là Phụ tùng xe / Phụ kiện
 app.post('/api/inventory/import', upload.single('file'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'Chưa tải lên file Excel!' });
@@ -215,9 +214,8 @@ app.post('/api/inventory/import', upload.single('file'), async (req, res) => {
         let importedCount = 0;
 
         for (let row of rawData) {
-            // Lấy cột đầu tiên (Key đầu tiên của object trong row hoặc tìm theo tên cột tiếng Việt)
             const keys = Object.keys(row);
-            const item_type = row[keys[0]] || row['Phụ tùng xe'] || row['item_type'] || 'Phụ tùng xe';
+            const item_type = row[keys[0]] || row['Phụ tùng xe'] || 'Phụ tùng xe';
             const brand = row['Thương hiệu'] || row['brand'] || '';
             const category = row['Chủng loại'] || row['category'] || '';
             const item_name = row['Tên hàng hoá'] || row['item_name'] || '';
@@ -320,7 +318,7 @@ app.post('/api/expenses', async (req, res) => {
     }
 });
 
-// --- API Reports (Chi tiết Doanh Thu, Hình thức thanh toán, Chi phí nhập theo thời gian) ---
+// --- API Reports ---
 app.get('/api/reports', async (req, res) => {
     const { start_date, end_date } = req.query;
     try {
@@ -361,7 +359,6 @@ app.get('/api/reports', async (req, res) => {
             }
         });
 
-        // Tính tổng vốn các sản phẩm nhập kho trong khoảng thời gian xem báo cáo
         let totalImportInventoryCost = 0;
         inventoryImports.forEach(i => {
             totalImportInventoryCost += Number(i.import_price || 0) * Number(i.quantity || 0);
