@@ -162,7 +162,7 @@
                     </div>
                     <div class="table-responsive">
                         <table class="table table-bordered bg-white align-middle">
-                            <thead><tr><th>Phân loại</th><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>Nhà cung cấp</th><th>ĐVT</th><th>Tồn kho</th><th>Giá Nhập</th><th>Giá Bán</th><th>Ngày nhập</th><th>Thao tác</th></tr></thead>
+                            <thead><tr><th>Phân loại</th><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>Nhà cung cấp</th><th>ĐVT</th><th>Số lượng tồn</th><th>Giá Nhập</th><th>Giá Bán</th><th>Ngày nhập</th><th>Thao tác</th></tr></thead>
                             <tbody id="inventory-table-body"></tbody>
                         </table>
                     </div>
@@ -201,7 +201,7 @@
                 <div class="card p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="mb-0">Báo Cáo Doanh Thu & Chi Phí Nhập Kho</h4>
-                        <button class="btn btn-success fw-bold" onclick="exportReportExcel()">📥 Xuất Báo Cáo ra XLSX</button>
+                        <button class="btn btn-success fw-bold" onclick="exportReportExcel()">📥 Xuất Báo Cáo ra XLSX (Đa Sheet)</button>
                     </div>
                     <div class="row g-3 mb-4 align-items-end">
                         <div class="col-md-4"><label class="form-label">Từ ngày:</label><input type="date" id="rep-start" class="form-control"></div>
@@ -355,25 +355,40 @@
                 (i.item_name && i.item_name.toLowerCase().includes(keyword)) ||
                 (i.category && i.category.toLowerCase().includes(keyword))
             );
-            document.getElementById('sell-table-body').innerHTML = filtered.map(i => `
-                <tr>
-                    <td><input type="checkbox" class="sell-checkbox" value="${i.id}" data-max="${i.quantity}"></td>
-                    <td><b>${i.item_type || 'Phụ tùng xe'}</b></td>
-                    <td><b>${i.brand}</b></td>
-                    <td>${i.category || ''}</td>
-                    <td><b>${i.item_name || ''}</b></td>
-                    <td><code>${i.part_code || ''}</code></td>
-                    <td>${i.unit || 'Cái'}</td>
-                    <td>${i.quantity}</td>
-                    <td class="text-danger fw-bold">${Number(i.sell_price).toLocaleString()}đ</td>
-                    <td><input type="number" class="form-control form-control-sm sell-qty" data-id="${i.id}" value="1" min="1" max="${i.quantity}" style="width: 80px;"></td>
-                </tr>
-            `).join('');
+
+            document.getElementById('sell-table-body').innerHTML = filtered.map(i => {
+                const isOutOfStock = i.quantity <= 0;
+                return `
+                    <tr class="${isOutOfStock ? 'table-secondary text-muted' : ''}">
+                        <td>
+                            <input type="checkbox" class="sell-checkbox" value="${i.id}" 
+                                data-max="${i.quantity}" ${isOutOfStock ? 'disabled' : ''}>
+                        </td>
+                        <td><b>${i.item_type || 'Phụ tùng xe'}</b></td>
+                        <td><b>${i.brand}</b></td>
+                        <td>${i.category || ''}</td>
+                        <td><b>${i.item_name || ''}</b></td>
+                        <td><code>${i.part_code || ''}</code></td>
+                        <td>${i.unit || 'Cái'}</td>
+                        <td>
+                            <span class="badge ${i.quantity > 0 ? 'bg-success' : 'bg-danger'}">
+                                ${i.quantity}
+                            </span>
+                        </td>
+                        <td class="text-danger fw-bold">${Number(i.sell_price).toLocaleString()}đ</td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm sell-qty" 
+                                data-id="${i.id}" value="${isOutOfStock ? 0 : 1}" min="1" max="${i.quantity}" 
+                                style="width: 80px;" ${isOutOfStock ? 'disabled' : ''}>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         async function processCheckout() {
             const checkboxes = document.querySelectorAll('.sell-checkbox:checked');
-            if(checkboxes.length === 0) return alert('Vui lòng chọn ít nhất một mặt hàng để bán!');
+            if(checkboxes.length === 0) return alert('Vui lòng chọn ít nhất một mặt hàng hợp lệ để bán!');
             
             let items = [];
             checkboxes.forEach(cb => {
@@ -566,20 +581,90 @@
                 `).join('');
         }
 
-        function exportReportExcel() {
+        async function exportReportExcel() {
             const wb = XLSX.utils.book_new();
+
+            // Sheet 1: Tổng quan kết quả kinh doanh
             const summaryData = [
-                { "Chỉ tiêu": "Tổng Doanh Thu", "Giá trị (VNĐ)": cachedReport.totalRevenue || 0 },
-                { "Chỉ tiêu": "Tổng Vốn Hàng Bán", "Giá trị (VNĐ)": cachedReport.totalImportSold || 0 },
-                { "Chỉ tiêu": "Tổng Vốn Nhập Kho", "Giá trị (VNĐ)": cachedReport.totalImportInventoryCost || 0 },
-                { "Chỉ tiêu": "Doanh Thu - Tiền mặt", "Giá trị (VNĐ)": cachedReport.revenueByMethod?.['Tiền mặt'] || 0 },
-                { "Chỉ tiêu": "Doanh Thu - Chuyển khoản", "Giá trị (VNĐ)": cachedReport.revenueByMethod?.['Chuyển khoản'] || 0 },
-                { "Chỉ tiêu": "Doanh Thu - Công nợ", "Giá trị (VNĐ)": cachedReport.revenueByMethod?.['Công nợ'] || 0 },
-                { "Chỉ tiêu": "Lợi Nhuận Thuần", "Giá trị (VNĐ)": cachedReport.netProfit || 0 }
+                { "Chỉ tiêu báo cáo": "BÁO CÁO KẾT QUẢ KINH DOANH VÀ TÀI CHÍNH", "Giá trị (VNĐ)": "" },
+                { "Chỉ tiêu báo cáo": "--------------------------------------------------", "Giá trị (VNĐ)": "----------------------" },
+                { "Chỉ tiêu báo cáo": "1. Tổng Doanh Thu Bán Hàng", "Giá trị (VNĐ)": cachedReport.totalRevenue || 0 },
+                { "Chỉ tiêu báo cáo": "   - Tiền mặt", "Giá trị (VNĐ)": cachedReport.revenueByMethod?.['Tiền mặt'] || 0 },
+                { "Chỉ tiêu báo cáo": "   - Chuyển khoản", "Giá trị (VNĐ)": cachedReport.revenueByMethod?.['Chuyển khoản'] || 0 },
+                { "Chỉ tiêu báo cáo": "   - Công nợ", "Giá trị (VNĐ)": cachedReport.revenueByMethod?.['Công nợ'] || 0 },
+                { "Chỉ tiêu báo cáo": "2. Tổng Chi Phí Nhập Hàng (Vốn hàng bán)", "Giá trị (VNĐ)": cachedReport.totalImportSold || 0 },
+                { "Chỉ tiêu báo cáo": "3. Tổng Vốn Nhập Kho (Trong kỳ)", "Giá trị (VNĐ)": cachedReport.totalImportInventoryCost || 0 },
+                { "Chỉ tiêu báo cáo": "4. Chi Phí Thường Xuyên (Vận hành)", "Giá trị (VNĐ)": cachedReport.totalExpense || 0 },
+                { "Chỉ tiêu báo cáo": "==================================", "Giá trị (VNĐ)": "======================" },
+                { "Chỉ tiêu báo cáo": "TỔNG LỢI NHUẬN THUẦN", "Giá trị (VNĐ)": cachedReport.netProfit || 0 }
             ];
-            const ws = XLSX.utils.json_to_sheet(summaryData);
-            XLSX.utils.book_append_sheet(wb, ws, "TongQuan_DoanhThu");
-            XLSX.writeFile(wb, "BaoCao_DoanhThu_PhuTung.xlsx");
+            const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, wsSummary, "TongQuan_DoanhThu");
+
+            // Sheet 2: Chi tiết đơn bán hàng
+            const bills = cachedReport.billsList || [];
+            const billsData = bills.map(b => {
+                let itemsText = "";
+                try {
+                    const parsed = JSON.parse(b.items_detail);
+                    itemsText = parsed.map(i => `${i.item_name} (${i.quantity} ${i.unit})`).join('; ');
+                } catch(e) {}
+                return {
+                    "Ngày bán": b.created_date,
+                    "Khách hàng": b.customer_name || 'Khách lẻ',
+                    "Số điện thoại": b.customer_phone || '',
+                    "Hình thức thanh toán": b.payment_method,
+                    "Chi tiết sản phẩm": itemsText,
+                    "Tổng tiền (VNĐ)": b.total_amount
+                };
+            });
+            const wsBills = XLSX.utils.json_to_sheet(billsData.length ? billsData : [{"Thông báo": "Không có đơn bán nào trong khoảng thời gian này"}]);
+            XLSX.utils.book_append_sheet(wb, wsBills, "ChiTiet_DonBan");
+
+            // Sheet 3: Chi tiết đơn nhập hàng
+            const imports = cachedReport.importList || [];
+            const importsData = imports.map(i => ({
+                "Ngày nhập": i.import_date || '',
+                "Phân loại": i.item_type || '',
+                "Thương hiệu": i.brand,
+                "Chủng loại": i.category || '',
+                "Tên hàng hoá": i.item_name || '',
+                "Mã số": i.part_code || '',
+                "Nhà cung cấp": i.supplier || '',
+                "Số lượng": i.quantity,
+                "Đơn vị tính": i.unit || 'Cái',
+                "Giá nhập (VNĐ)": i.import_price,
+                "Tổng tiền nhập (VNĐ)": Number(i.import_price) * Number(i.quantity)
+            }));
+            const wsImports = XLSX.utils.json_to_sheet(importsData.length ? importsData : [{"Thông báo": "Không có đơn nhập nào trong khoảng thời gian này"}]);
+            XLSX.utils.book_append_sheet(wb, wsImports, "ChiTiet_DonNhap");
+
+            // Sheet 4: Báo cáo tồn kho hiện tại
+            try {
+                const invRes = await fetch('/api/inventory');
+                const inventoryList = await invRes.json();
+                const inventoryData = inventoryList.map(i => ({
+                    "Phân loại": i.item_type || 'Phụ tùng xe',
+                    "Thương hiệu": i.brand,
+                    "Chủng loại": i.category || '',
+                    "Tên hàng hoá": i.item_name || '',
+                    "Mã số": i.part_code || '',
+                    "Nhà cung cấp": i.supplier || '',
+                    "Số lượng tồn": i.quantity,
+                    "Đơn vị tính": i.unit || 'Cái',
+                    "Giá nhập (VNĐ)": i.import_price,
+                    "Giá bán (VNĐ)": i.sell_price,
+                    "Ngày nhập gần nhất": i.import_date || ''
+                }));
+                const wsInventory = XLSX.utils.json_to_sheet(inventoryData);
+                XLSX.utils.book_append_sheet(wb, wsInventory, "BaoCao_TonKho");
+            } catch(err) {
+                console.error("Lỗi khi tải dữ liệu tồn kho cho Excel:", err);
+            }
+
+            const startDate = document.getElementById('rep-start').value || 'TatCa';
+            const endDate = document.getElementById('rep-end').value || 'DenNay';
+            XLSX.writeFile(wb, `BaoCao_KinhDoanh_${startDate}_den_${endDate}.xlsx`);
         }
 
         async function loadUsers() {
