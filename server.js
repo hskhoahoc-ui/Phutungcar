@@ -8,19 +8,15 @@ const XLSX = require('xlsx');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Cấu hình multer để nhận file upload trực tiếp qua form-data
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Kết nối tự động nhận từ biến môi trường DATABASE_URL trên Render (Supabase PostgreSQL)
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    },
+    ssl: { rejectUnauthorized: false },
     family: 4
 });
 
@@ -32,7 +28,6 @@ pool.connect((err) => {
     }
 });
 
-// Khởi tạo các bảng dữ liệu trên Supabase nếu chưa tồn tại
 const initDatabase = async () => {
     try {
         await pool.query(`CREATE TABLE IF NOT EXISTS users (
@@ -53,6 +48,7 @@ const initDatabase = async () => {
 
         await pool.query(`CREATE TABLE IF NOT EXISTS inventory (
             id SERIAL PRIMARY KEY,
+            item_type TEXT DEFAULT 'Phụ tùng xe',
             brand TEXT,
             category TEXT,
             item_name TEXT,
@@ -73,8 +69,11 @@ const initDatabase = async () => {
             date TEXT
         )`);
 
+        // Bảng quản lý đơn hàng xuất bán (có lưu thông tin khách hàng và hình thức thanh toán)
         await pool.query(`CREATE TABLE IF NOT EXISTS bills (
             id SERIAL PRIMARY KEY,
+            customer_name TEXT DEFAULT 'Khách lẻ',
+            customer_phone TEXT DEFAULT '',
             items_detail TEXT,
             total_amount REAL,
             total_import_cost REAL,
@@ -82,7 +81,6 @@ const initDatabase = async () => {
             created_date TEXT
         )`);
 
-        // Thêm dữ liệu mặc định nếu bảng users trống
         const userCountRes = await pool.query(`SELECT COUNT(*) as count FROM users`);
         if (userCountRes.rows[0] && parseInt(userCountRes.rows[0].count) === 0) {
             await pool.query(`INSERT INTO users (username, password, role) VALUES ('admin', '123456', 'admin')`);
@@ -173,7 +171,7 @@ app.get('/api/inventory', async (req, res) => {
         let query = `SELECT * FROM inventory`;
         let params = [];
         if (search) {
-            query += ` WHERE brand ILIKE $1 OR category ILIKE $1 OR item_name ILIKE $1 OR part_code ILIKE $1 OR supplier ILIKE $1`;
+            query += ` WHERE item_type ILIKE $1 OR brand ILIKE $1 OR category ILIKE $1 OR item_name ILIKE $1 OR part_code ILIKE $1 OR supplier ILIKE $1`;
             params = [`%${search}%`];
         }
         query += ` ORDER BY id DESC`;
@@ -185,15 +183,16 @@ app.get('/api/inventory', async (req, res) => {
 });
 
 app.post('/api/inventory/save', async (req, res) => {
-    const { id, brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price } = req.body;
-    const import_date = new Date().toISOString().split('T')[0];
+    const { id, item_type, brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price, import_date } = req.body;
+    const finalImportDate = import_date || new Date().toISOString().split('T')[0];
+    const finalItemType = item_type || 'Phụ tùng xe';
     try {
         if (id) {
-            await pool.query(`UPDATE inventory SET brand = $1, category = $2, item_name = $3, part_code = $4, supplier = $5, quantity = $6, unit = $7, import_price = $8, sell_price = $9 WHERE id = $10`,
-                [brand, category, item_name, part_code, supplier, quantity, unit || 'Cái', import_price, sell_price, id]);
+            await pool.query(`UPDATE inventory SET item_type = $1, brand = $2, category = $3, item_name = $4, part_code = $5, supplier = $6, quantity = $7, unit = $8, import_price = $9, sell_price = $10 WHERE id = $11`,
+                [finalItemType, brand, category, item_name, part_code, supplier, quantity, unit || 'Cái', import_price, sell_price, id]);
         } else {
-            await pool.query(`INSERT INTO inventory (brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price, import_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-                [brand, category, item_name, part_code, supplier, quantity, unit || 'Cái', import_price, sell_price, import_date]);
+            await pool.query(`INSERT INTO inventory (item_type, brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price, import_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                [finalItemType, brand, category, item_name, part_code, supplier, quantity, unit || 'Cái', import_price, sell_price, finalImportDate]);
         }
         res.json({ success: true });
     } catch (err) {
@@ -201,7 +200,7 @@ app.post('/api/inventory/save', async (req, res) => {
     }
 });
 
-// Thêm API xử lý Import file Excel (.xlsx) trực tiếp trên server hỗ trợ chuẩn hóa cột tiếng Việt
+// API Import file Excel (.xlsx) với cột đầu tiên nhận diện loại (Phụ tùng xe / Phụ kiện)
 app.post('/api/inventory/import', upload.single('file'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'Chưa tải lên file Excel!' });
@@ -216,6 +215,9 @@ app.post('/api/inventory/import', upload.single('file'), async (req, res) => {
         let importedCount = 0;
 
         for (let row of rawData) {
+            // Lấy cột đầu tiên (Key đầu tiên của object trong row hoặc tìm theo tên cột tiếng Việt)
+            const keys = Object.keys(row);
+            const item_type = row[keys[0]] || row['Phụ tùng xe'] || row['item_type'] || 'Phụ tùng xe';
             const brand = row['Thương hiệu'] || row['brand'] || '';
             const category = row['Chủng loại'] || row['category'] || '';
             const item_name = row['Tên hàng hoá'] || row['item_name'] || '';
@@ -228,8 +230,8 @@ app.post('/api/inventory/import', upload.single('file'), async (req, res) => {
 
             if (part_code || item_name) {
                 await pool.query(
-                    `INSERT INTO inventory (brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price, import_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-                    [brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price, import_date]
+                    `INSERT INTO inventory (item_type, brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price, import_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                    [item_type, brand, category, item_name, part_code, supplier, quantity, unit, import_price, sell_price, import_date]
                 );
                 importedCount++;
             }
@@ -252,8 +254,11 @@ app.delete('/api/inventory/:id', async (req, res) => {
 
 // --- API Sell ---
 app.post('/api/inventory/sell', async (req, res) => {
-    const { items, payment_method } = req.body;
+    const { items, payment_method, customer_name, customer_phone } = req.body;
     const created_date = new Date().toISOString().split('T')[0];
+    const cName = customer_name && customer_name.trim() !== '' ? customer_name.trim() : 'Khách lẻ';
+    const cPhone = customer_phone || '';
+
     try {
         let total_amount = 0;
         let total_import_cost = 0;
@@ -285,8 +290,8 @@ app.post('/api/inventory/sell', async (req, res) => {
             await pool.query(`UPDATE inventory SET quantity = quantity - $1 WHERE id = $2`, [item.quantity_sold, item.id]);
         }
 
-        await pool.query(`INSERT INTO bills (items_detail, total_amount, total_import_cost, payment_method, created_date) VALUES ($1, $2, $3, $4, $5)`,
-            [JSON.stringify(soldDetails), total_amount, total_import_cost, payment_method, created_date]);
+        await pool.query(`INSERT INTO bills (customer_name, customer_phone, items_detail, total_amount, total_import_cost, payment_method, created_date) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [cName, cPhone, JSON.stringify(soldDetails), total_amount, total_import_cost, payment_method, created_date]);
 
         res.json({ success: true, total_amount });
     } catch (err) {
@@ -315,37 +320,65 @@ app.post('/api/expenses', async (req, res) => {
     }
 });
 
-// --- API Reports (Đã bổ sung tổng giá trị vốn sản phẩm nhập kho) ---
+// --- API Reports (Chi tiết Doanh Thu, Hình thức thanh toán, Chi phí nhập theo thời gian) ---
 app.get('/api/reports', async (req, res) => {
     const { start_date, end_date } = req.query;
     try {
-        let billQuery = `SELECT SUM(total_amount) as total_revenue, SUM(total_import_cost) as total_import_sold FROM bills`;
+        let billQuery = `SELECT * FROM bills`;
         let expQuery = `SELECT SUM(amount) as total_expense FROM expenses`;
-        let invQuery = `SELECT SUM(import_price * quantity) as total_import_inventory FROM inventory`;
+        let invQuery = `SELECT * FROM inventory`;
         let params = [];
 
         if (start_date && end_date) {
             billQuery += ` WHERE created_date BETWEEN $1 AND $2`;
             expQuery += ` WHERE date BETWEEN $1 AND $2`;
+            invQuery += ` WHERE import_date BETWEEN $1 AND $2`;
             params = [start_date, end_date];
         }
 
         const billRes = await pool.query(billQuery, params);
-        const expRes = await pool.query(expQuery, params);
-        const invRes = await pool.query(invQuery);
+        const expRes = await pool.query(expQuery, params.length ? params : []);
+        const invRes = await pool.query(invQuery, params);
 
-        const totalRevenue = Number(billRes.rows[0]?.total_revenue || 0);
-        const totalImportSold = Number(billRes.rows[0]?.total_import_sold || 0);
+        const bills = billRes.rows || [];
+        const inventoryImports = invRes.rows || [];
+
+        let totalRevenue = 0;
+        let totalImportSold = 0;
+        let revenueByMethod = { 'Tiền mặt': 0, 'Chuyển khoản': 0, 'Công nợ': 0 };
+
+        bills.forEach(b => {
+            const amount = Number(b.total_amount || 0);
+            const importCost = Number(b.total_import_cost || 0);
+            totalRevenue += amount;
+            totalImportSold += importCost;
+
+            const method = b.payment_method || 'Tiền mặt';
+            if (revenueByMethod[method] !== undefined) {
+                revenueByMethod[method] += amount;
+            } else {
+                revenueByMethod[method] = amount;
+            }
+        });
+
+        // Tính tổng vốn các sản phẩm nhập kho trong khoảng thời gian xem báo cáo
+        let totalImportInventoryCost = 0;
+        inventoryImports.forEach(i => {
+            totalImportInventoryCost += Number(i.import_price || 0) * Number(i.quantity || 0);
+        });
+
         const totalExpense = Number(expRes.rows[0]?.total_expense || 0);
-        const totalImportInventory = Number(invRes.rows[0]?.total_import_inventory || 0);
         const netProfit = totalRevenue - totalImportSold - totalExpense;
 
         res.json({ 
             totalRevenue, 
             totalImportSold, 
             totalExpense, 
-            totalImportInventory, // Trả về thông tin tổng vốn sản phẩm nhập/tồn kho
-            netProfit 
+            totalImportInventoryCost,
+            netProfit,
+            revenueByMethod,
+            billsList: bills,
+            importList: inventoryImports
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
