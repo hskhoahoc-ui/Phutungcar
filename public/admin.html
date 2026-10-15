@@ -43,47 +43,27 @@
                 </div>
             </div>
 
-            <!-- Nhập hàng (Bố trí ngang) & Import XLSX ở dưới cùng -->
+            <!-- Nhập hàng -->
             <div class="tab-pane fade" id="import-tab">
                 <div class="card p-4 mb-4">
                     <h4 class="mb-3" id="inv-form-title">Thêm / Sửa Phụ Tùng & Phụ Kiện Xe</h4>
                     <input type="hidden" id="i-id">
                     
-                    <!-- Lựa chọn loại -->
-                    <div class="mb-3">
-                        <label class="fw-bold text-primary">Loại nhập hàng:</label>
-                        <select id="i-type-option" class="form-select w-50" onchange="toggleItemType()">
-                            <option value="part">Phụ tùng xe</option>
-                            <option value="accessory">Phụ kiện xe</option>
-                        </select>
-                    </div>
-
-                    <!-- Bố trí form nhập hàng nằm ngang -->
                     <div class="row g-3">
                         <div class="col-md-3">
+                            <label class="fw-bold text-primary">Phân loại (Cột đầu):</label>
+                            <select id="i-item-type" class="form-select">
+                                <option value="Phụ tùng xe">Phụ tùng xe</option>
+                                <option value="Phụ kiện">Phụ kiện</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <label>Thương hiệu:</label>
-                            <div id="brand-input-container">
-                                <input type="text" id="i-brand" class="form-control" placeholder="Tự nhập thương hiệu...">
-                            </div>
+                            <input type="text" id="i-brand" class="form-control" placeholder="Toyota, Huyndai...">
                         </div>
                         <div class="col-md-3">
                             <label>Chủng loại:</label>
-                            <div id="category-container">
-                                <input type="text" id="i-category-text" class="form-control" placeholder="Nhập chủng loại...">
-                                <select id="i-category-select" class="form-select" style="display:none;">
-                                    <option value="Bóng đèn">Bóng đèn</option>
-                                    <option value="Dung dịch bảo dưỡng xe">Dung dịch bảo dưỡng xe</option>
-                                    <option value="Nệm ghế nội thất">Nệm ghế nội thất</option>
-                                    <option value="Thảm lót sàn">Thảm lót sàn</option>
-                                    <option value="Thảm taplo">Thảm taplo</option>
-                                    <option value="Hương nội thất">Hương nội thất</option>
-                                    <option value="Trang trí taplo">Trang trí taplo</option>
-                                    <option value="Màn hình">Màn hình</option>
-                                    <option value="Bọc vô lăng">Bọc vô lăng</option>
-                                    <option value="Bọc nội thất">Bọc nội thất</option>
-                                    <option value="Phụ kiện khác">Phụ kiện khác</option>
-                                </select>
-                            </div>
+                            <input type="text" id="i-category-text" class="form-control" placeholder="Accent 2014-2020...">
                         </div>
                         <div class="col-md-3">
                             <label>Tên hàng hoá:</label>
@@ -103,7 +83,7 @@
                         </div>
                         <div class="col-md-3">
                             <label>Đơn vị tính:</label>
-                            <input type="text" id="i-unit" class="form-control" placeholder="Cái, bộ, hộp...">
+                            <input type="text" id="i-unit" class="form-control" value="Cái">
                         </div>
                         <div class="col-md-3">
                             <label>Giá nhập (VNĐ):</label>
@@ -113,6 +93,10 @@
                             <label>Giá bán (VNĐ):</label>
                             <input type="number" id="i-sell-price" class="form-control" onblur="autoMultiplyThousand(this)">
                         </div>
+                        <div class="col-md-3">
+                            <label>Ngày nhập:</label>
+                            <input type="date" id="i-import-date" class="form-control">
+                        </div>
                     </div>
                     <div class="mt-3">
                         <button class="btn btn-success" onclick="saveInventoryItem()">Lưu Phụ Tùng / Phụ Kiện</button>
@@ -120,12 +104,11 @@
                     </div>
                 </div>
 
-                <!-- Import Danh Sách Từ File XLSX ở dưới cùng -->
                 <div class="card p-4">
                     <h4 class="mb-3 text-success">📥 Import Danh Sách Từ File XLSX</h4>
                     <input type="file" id="excel-file" class="form-control mb-3" accept=".xlsx, .xls">
                     <button class="btn btn-outline-success" onclick="importExcel()">Tải Dữ Liệu Lên Hệ Thống</button>
-                    <small class="text-muted mt-2 d-block">File Excel cần các cột khớp: <code>brand</code>, <code>category</code>, <code>item_name</code>, <code>part_code</code>, <code>supplier</code>, <code>quantity</code>, <code>unit</code>, <code>import_price</code>, <code>sell_price</code>.</small>
+                    <small class="text-muted mt-2 d-block">Cột đầu tiên file Excel là Loại hàng (Ví dụ: <code>Phụ tùng xe</code> hoặc <code>Phụ kiện</code>), tiếp theo là <code>Thương hiệu</code>, <code>Chủng loại</code>, <code>Tên hàng hoá</code>, <code>Mã số</code>, <code>Nhà cung cấp</code>, <code>Số lượng</code>, <code>Đơn vị tính</code>, <code>Giá nhập</code>, <code>Giá bán</code>.</small>
                 </div>
             </div>
 
@@ -134,18 +117,30 @@
                 <div class="card p-4">
                     <h4 class="mb-3">Xuất Bán Hàng & Thanh Toán</h4>
                     <div class="row g-3 mb-3">
-                        <div class="col-md-6"><input type="text" id="sell-search" class="form-control" placeholder="Tìm kiếm phụ tùng để xuất bán..." oninput="loadSellTable()"></div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
+                            <label>Họ tên khách hàng:</label>
+                            <input type="text" id="sell-customer-name" class="form-control" placeholder="Mặc định: Khách lẻ">
+                        </div>
+                        <div class="col-md-4">
+                            <label>Số điện thoại:</label>
+                            <input type="text" id="sell-customer-phone" class="form-control" placeholder="Số điện thoại khách...">
+                        </div>
+                        <div class="col-md-4">
+                            <label>Hình thức thanh toán:</label>
                             <select id="sell-payment-method" class="form-select">
                                 <option value="Tiền mặt">Tiền mặt</option>
-                                <option value="Chuyển khoản">Chuyển khoản (Xác thực QR)</option>
+                                <option value="Chuyển khoản">Chuyển khoản</option>
+                                <option value="Công nợ">Công nợ</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-9"><input type="text" id="sell-search" class="form-control" placeholder="Tìm kiếm phụ tùng để xuất bán..." oninput="loadSellTable()"></div>
                         <div class="col-md-3"><button class="btn btn-danger w-100 fw-bold" onclick="processCheckout()">Xác Nhận Xuất Bán</button></div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-bordered bg-white align-middle">
-                            <thead><tr><th>Chọn</th><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>ĐVT</th><th>Tồn kho</th><th>Giá bán</th><th>SL Bán</th></tr></thead>
+                            <thead><tr><th>Chọn</th><th>Loại</th><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>ĐVT</th><th>Tồn kho</th><th>Giá bán</th><th>SL Bán</th></tr></thead>
                             <tbody id="sell-table-body"></tbody>
                         </table>
                     </div>
@@ -159,7 +154,7 @@
                         <h4 class="mb-0">Báo Cáo Tồn Kho Phụ Tùng & Phụ Kiện</h4>
                         <div style="width: 280px;">
                             <select id="inv-filter-status" class="form-select" onchange="renderInventoryTable()">
-                                <option value="all">Xem tất cả (SL từ 1 trở lên)</option>
+                                <option value="all">Xem tất cả</option>
                                 <option value="out">Hết hàng (SL = 0)</option>
                                 <option value="low">Ít hàng (SL = 1 hoặc 2)</option>
                             </select>
@@ -167,7 +162,7 @@
                     </div>
                     <div class="table-responsive">
                         <table class="table table-bordered bg-white align-middle">
-                            <thead><tr><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>Nhà cung cấp</th><th>ĐVT</th><th>Số lượng tồn</th><th>Giá Nhập</th><th>Giá Bán</th><th>Thao tác</th></tr></thead>
+                            <thead><tr><th>Phân loại</th><th>Thương hiệu</th><th>Chủng loại</th><th>Tên hàng hoá</th><th>Mã số</th><th>Nhà cung cấp</th><th>ĐVT</th><th>Tồn kho</th><th>Giá Nhập</th><th>Giá Bán</th><th>Ngày nhập</th><th>Thao tác</th></tr></thead>
                             <tbody id="inventory-table-body"></tbody>
                         </table>
                     </div>
@@ -182,7 +177,6 @@
                         <div class="mb-3"><label>Ngày chi:</label><input type="date" id="e-date" class="form-control"></div>
                         <div class="mb-3"><label>Loại chi phí:</label>
                             <select id="e-cat" class="form-select">
-                                <option value="Chi phí nhập hàng">Chi phí nhập hàng</option>
                                 <option value="Mặt bằng">Mặt bằng</option>
                                 <option value="Lương nhân viên">Lương nhân viên</option>
                                 <option value="Điện nước">Điện nước</option>
@@ -206,7 +200,7 @@
             <div class="tab-pane fade" id="report-tab">
                 <div class="card p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0">Báo Cáo Doanh Thu & Lợi Nhuận</h4>
+                        <h4 class="mb-0">Báo Cáo Doanh Thu & Chi Phí Nhập Kho</h4>
                         <button class="btn btn-success fw-bold" onclick="exportReportExcel()">📥 Xuất Báo Cáo ra XLSX</button>
                     </div>
                     <div class="row g-3 mb-4 align-items-end">
@@ -215,11 +209,41 @@
                         <div class="col-md-4"><button class="btn btn-primary w-100" onclick="loadReport()">Xem Báo Cáo</button></div>
                     </div>
                     <hr>
-                    <div class="row text-center g-3">
+                    <div class="row text-center g-3 mb-4">
                         <div class="col-md-3"><div class="p-3 bg-light border rounded"><h6 class="text-muted">Tổng Doanh Thu</h6><h4 class="text-primary fw-bold" id="rep-revenue">0đ</h4></div></div>
-                        <div class="col-md-3"><div class="p-3 bg-light border rounded"><h6 class="text-muted">Tổng Chi Phí Nhập</h6><h4 class="text-danger fw-bold" id="rep-import-cost">0đ</h4></div></div>
-                        <div class="col-md-3"><div class="p-3 bg-light border rounded"><h6 class="text-muted">Chi Phí Thường Xuyên</h6><h4 class="text-warning fw-bold" id="rep-expense">0đ</h4></div></div>
+                        <div class="col-md-3"><div class="p-3 bg-light border rounded"><h6 class="text-muted">Tổng Vốn Hàng Bán</h6><h4 class="text-danger fw-bold" id="rep-import-cost">0đ</h4></div></div>
+                        <div class="col-md-3"><div class="p-3 bg-light border rounded"><h6 class="text-muted">Tổng Vốn Nhập Kho</h6><h4 class="text-info fw-bold" id="rep-import-inv-cost">0đ</h4></div></div>
                         <div class="col-md-3"><div class="p-3 bg-light border rounded"><h6 class="text-muted">TỔNG LỢI NHUẬN</h6><h4 class="text-success fw-bold" id="rep-net">0đ</h4></div></div>
+                    </div>
+
+                    <!-- Doanh thu chi tiết theo hình thức thanh toán -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h5 class="fw-bold">Chi Tiết Doanh Thu Theo Hình Thức Thanh Toán</h5>
+                            <ul>
+                                <li>Tiền mặt: <strong id="method-cash" class="text-success">0đ</strong></li>
+                                <li>Chuyển khoản: <strong id="method-transfer" class="text-primary">0đ</strong></li>
+                                <li>Công nợ: <strong id="method-debt" class="text-warning">0đ</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Bảng chi tiết các đơn bán trong kỳ -->
+                    <h5 class="fw-bold mb-2">📋 Chi Tiết Các Đơn Bán Hàng Trong Kỳ</h5>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-bordered bg-white align-middle">
+                            <thead><tr><th>Ngày bán</th><th>Khách hàng</th><th>SĐT</th><th>Hình thức</th><th>Chi tiết sản phẩm</th><th>Tổng tiền</th></tr></thead>
+                            <tbody id="report-bills-body"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Bảng chi tiết các sản phẩm nhập kho trong kỳ -->
+                    <h5 class="fw-bold mb-2">📦 Chi Tiết Các Sản Phẩm Nhập Kho Trong Kỳ</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered bg-white align-middle">
+                            <thead><tr><th>Ngày nhập</th><th>Phân loại</th><th>Thương hiệu</th><th>Tên hàng hoá</th><th>Mã số</th><th>SL</th><th>Giá nhập</th><th>Tổng tiền nhập</th></tr></thead>
+                            <tbody id="report-imports-body"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -259,19 +283,6 @@
             }
         }
 
-        function toggleItemType() {
-            const type = document.getElementById('i-type-option').value;
-            const catText = document.getElementById('i-category-text');
-            const catSelect = document.getElementById('i-category-select');
-            if (type === 'part') {
-                catText.style.display = 'block';
-                catSelect.style.display = 'none';
-            } else {
-                catText.style.display = 'none';
-                catSelect.style.display = 'block';
-            }
-        }
-
         function checkRole() {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             if(user.role === 'staff') {
@@ -282,7 +293,10 @@
 
         async function loadAll() {
             checkRole();
-            document.getElementById('e-date').value = new Date().toISOString().split('T')[0];
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('e-date').value = today;
+            document.getElementById('i-import-date').value = today;
+
             const sRes = await fetch('/api/settings');
             const settings = await sRes.json();
             document.getElementById('s-name').value = settings.name || '';
@@ -309,14 +323,13 @@
                 filtered = cachedInventory.filter(i => i.quantity === 0);
             } else if (filterVal === 'low') {
                 filtered = cachedInventory.filter(i => i.quantity === 1 || i.quantity === 2);
-            } else if (filterVal === 'all') {
-                filtered = cachedInventory.filter(i => i.quantity >= 1);
             }
 
             document.getElementById('inventory-table-body').innerHTML = filtered.map(i => {
                 let rowClass = i.quantity === 0 ? 'row-out' : (i.quantity <= 2 ? 'row-low' : '');
                 return `
                     <tr class="${rowClass}">
+                        <td><b>${i.item_type || 'Phụ tùng xe'}</b></td>
                         <td><b>${i.brand}</b></td>
                         <td>${i.category || ''}</td>
                         <td><b>${i.item_name || ''}</b></td>
@@ -326,6 +339,7 @@
                         <td><b>${i.quantity}</b></td>
                         <td>${Number(i.import_price).toLocaleString()}đ</td>
                         <td>${Number(i.sell_price).toLocaleString()}đ</td>
+                        <td>${i.import_date || ''}</td>
                         <td>
                             <button class="btn btn-sm btn-warning me-1" onclick='editInventory(${JSON.stringify(i)})'>Sửa</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteInventory(${i.id})">Xóa</button>
@@ -338,6 +352,7 @@
         async function loadSellTable() {
             const keyword = document.getElementById('sell-search').value.toLowerCase();
             const filtered = cachedInventory.filter(i => 
+                (i.item_type && i.item_type.toLowerCase().includes(keyword)) ||
                 (i.brand && i.brand.toLowerCase().includes(keyword)) || 
                 (i.part_code && i.part_code.toLowerCase().includes(keyword)) || 
                 (i.item_name && i.item_name.toLowerCase().includes(keyword)) ||
@@ -346,6 +361,7 @@
             document.getElementById('sell-table-body').innerHTML = filtered.map(i => `
                 <tr>
                     <td><input type="checkbox" class="sell-checkbox" value="${i.id}" data-max="${i.quantity}"></td>
+                    <td><b>${i.item_type || 'Phụ tùng xe'}</b></td>
                     <td><b>${i.brand}</b></td>
                     <td>${i.category || ''}</td>
                     <td><b>${i.item_name || ''}</b></td>
@@ -369,14 +385,19 @@
                 items.push({ id: parseInt(id), quantity_sold: parseInt(qtyInput.value) });
             });
 
+            const customer_name = document.getElementById('sell-customer-name').value;
+            const customer_phone = document.getElementById('sell-customer-phone').value;
             const payment_method = document.getElementById('sell-payment-method').value;
+
             const res = await fetch('/api/inventory/sell', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ items, payment_method })
+                body: JSON.stringify({ items, payment_method, customer_name, customer_phone })
             });
             const data = await res.json();
             if(data.success) {
-                alert(`Xuất bán thành công! Tổng tiền: ${Number(data.total_amount).toLocaleString()}đ (${payment_method})`);
+                alert(`Xuất bán thành công cho khách [${customer_name || 'Khách lẻ'}]! Tổng tiền: ${Number(data.total_amount).toLocaleString()}đ (${payment_method})`);
+                document.getElementById('sell-customer-name').value = '';
+                document.getElementById('sell-customer-phone').value = '';
                 loadAll();
             } else {
                 alert(data.error);
@@ -384,20 +405,19 @@
         }
 
         async function saveInventoryItem() {
-            const typeOption = document.getElementById('i-type-option').value;
-            const category = typeOption === 'part' ? document.getElementById('i-category-text').value : document.getElementById('i-category-select').value;
-            
             const data = {
                 id: document.getElementById('i-id').value,
+                item_type: document.getElementById('i-item-type').value,
                 brand: document.getElementById('i-brand').value,
-                category: category,
+                category: document.getElementById('i-category-text').value,
                 item_name: document.getElementById('i-item-name').value,
                 part_code: document.getElementById('i-code').value,
                 supplier: document.getElementById('i-supplier').value,
                 quantity: document.getElementById('i-qty').value,
                 unit: document.getElementById('i-unit').value || 'Cái',
                 import_price: document.getElementById('i-import-price').value,
-                sell_price: document.getElementById('i-sell-price').value
+                sell_price: document.getElementById('i-sell-price').value,
+                import_date: document.getElementById('i-import-date').value
             };
             await fetch('/api/inventory/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
             alert('Lưu thành công!');
@@ -406,7 +426,9 @@
 
         function editInventory(i) {
             document.getElementById('i-id').value = i.id;
-            document.getElementById('i-brand').value = i.brand;
+            document.getElementById('i-item-type').value = i.item_type || 'Phụ tùng xe';
+            document.getElementById('i-brand').value = i.brand || '';
+            document.getElementById('i-category-text').value = i.category || '';
             document.getElementById('i-item-name').value = i.item_name || '';
             document.getElementById('i-code').value = i.part_code || '';
             document.getElementById('i-supplier').value = i.supplier || '';
@@ -414,18 +436,7 @@
             document.getElementById('i-unit').value = i.unit || 'Cái';
             document.getElementById('i-import-price').value = i.import_price;
             document.getElementById('i-sell-price').value = i.sell_price;
-            
-            // Xác định xem thuộc Phụ tùng hay Phụ kiện
-            const accessories = ["Bóng đèn", "Dung dịch bảo dưỡng xe", "Nệm ghế nội thất", "Thảm lót sàn", "Thảm taplo", "Hương nội thất", "Trang trí taplo", "Màn hình", "Bọc vô lăng", "Bọc nội thất", "Phụ kiện khác"];
-            if (accessories.includes(i.category)) {
-                document.getElementById('i-type-option').value = 'accessory';
-                toggleItemType();
-                document.getElementById('i-category-select').value = i.category;
-            } else {
-                document.getElementById('i-type-option').value = 'part';
-                toggleItemType();
-                document.getElementById('i-category-text').value = i.category || '';
-            }
+            document.getElementById('i-import-date').value = i.import_date || new Date().toISOString().split('T')[0];
 
             document.getElementById('i-form-title').innerText = 'Sửa Phụ Tùng / Phụ Kiện';
             document.getElementById('i-cancel').style.display = 'inline-block';
@@ -433,15 +444,17 @@
 
         function resetInventoryForm() {
             document.getElementById('i-id').value = '';
+            document.getElementById('i-item-type').value = 'Phụ tùng xe';
             document.getElementById('i-brand').value = '';
             document.getElementById('i-category-text').value = '';
             document.getElementById('i-item-name').value = '';
             document.getElementById('i-code').value = '';
             document.getElementById('i-supplier').value = '';
             document.getElementById('i-qty').value = '1';
-            document.getElementById('i-unit').value = '';
+            document.getElementById('i-unit').value = 'Cái';
             document.getElementById('i-import-price').value = '';
             document.getElementById('i-sell-price').value = '';
+            document.getElementById('i-import-date').value = new Date().toISOString().split('T')[0];
             document.getElementById('i-form-title').innerText = 'Thêm / Sửa Phụ Tùng & Phụ Kiện Xe';
             document.getElementById('i-cancel').style.display = 'none';
         }
@@ -453,33 +466,17 @@
         async function importExcel() {
             const fileInput = document.getElementById('excel-file');
             if(!fileInput.files[0]) return alert('Vui lòng chọn file Excel!');
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(sheet);
-                
-                for(let row of rows) {
-                    await fetch('/api/inventory/save', {
-                        method: 'POST', headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            brand: row.brand || 'Khác',
-                            category: row.category || '',
-                            item_name: row.item_name || '',
-                            part_code: row.part_code || '',
-                            supplier: row.supplier || '',
-                            quantity: row.quantity || 1,
-                            unit: row.unit || 'Cái',
-                            import_price: row.import_price || 0,
-                            sell_price: row.sell_price || 0
-                        })
-                    });
-                }
-                alert('Import dữ liệu Excel thành công!');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            const res = await fetch('/api/inventory/import', { method: 'POST', body: formData });
+            const data = await res.json();
+            if(data.success) {
+                alert(data.message);
                 loadAll();
-            };
-            reader.readAsArrayBuffer(fileInput.files[0]);
+            } else {
+                alert(data.error);
+            }
         }
 
         async function saveSettings() {
@@ -526,40 +523,68 @@
             const res = await fetch(url);
             cachedReport = await res.json();
 
-            document.getElementById('rep-revenue').innerText = Number(cachedReport.totalRevenue).toLocaleString() + 'đ';
-            document.getElementById('rep-import-cost').innerText = Number(cachedReport.totalImportSold).toLocaleString() + 'đ';
-            document.getElementById('rep-expense').innerText = Number(cachedReport.totalExpense).toLocaleString() + 'đ';
-            document.getElementById('rep-net').innerText = Number(cachedReport.netProfit).toLocaleString() + 'đ';
+            document.getElementById('rep-revenue').innerText = Number(cachedReport.totalRevenue || 0).toLocaleString() + 'đ';
+            document.getElementById('rep-import-cost').innerText = Number(cachedReport.totalImportSold || 0).toLocaleString() + 'đ';
+            document.getElementById('rep-import-inv-cost').innerText = Number(cachedReport.totalImportInventoryCost || 0).toLocaleString() + 'đ';
+            document.getElementById('rep-net').innerText = Number(cachedReport.netProfit || 0).toLocaleString() + 'đ';
+
+            const methods = cachedReport.revenueByMethod || {};
+            document.getElementById('method-cash').innerText = Number(methods['Tiền mặt'] || 0).toLocaleString() + 'đ';
+            document.getElementById('method-transfer').innerText = Number(methods['Chuyển khoản'] || 0).toLocaleString() + 'đ';
+            document.getElementById('method-debt').innerText = Number(methods['Công nợ'] || 0).toLocaleString() + 'đ';
+
+            // Hiển thị danh sách các đơn bán chi tiết
+            const bills = cachedReport.billsList || [];
+            document.getElementById('report-bills-body').innerHTML = bills.length === 0 ? 
+                `<tr><td colspan="6" class="text-center text-muted">Không có đơn bán nào trong khoảng thời gian này</td></tr>` :
+                bills.map(b => {
+                    let itemsParsed = [];
+                    try { itemsParsed = JSON.parse(b.items_detail); } catch(e){}
+                    let itemsStr = itemsParsed.map(i => `${i.item_name} (${i.quantity} ${i.unit})`).join(', ');
+                    return `
+                        <tr>
+                            <td>${b.created_date}</td>
+                            <td><b>${b.customer_name || 'Khách lẻ'}</b></td>
+                            <td>${b.customer_phone || ''}</td>
+                            <td><span class="badge bg-secondary">${b.payment_method}</span></td>
+                            <td>${itemsStr}</td>
+                            <td class="text-primary fw-bold">${Number(b.total_amount).toLocaleString()}đ</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            // Hiển thị danh sách các sản phẩm nhập kho chi tiết
+            const imports = cachedReport.importList || [];
+            document.getElementById('report-imports-body').innerHTML = imports.length === 0 ?
+                `<tr><td colspan="8" class="text-center text-muted">Không có sản phẩm nhập kho nào trong khoảng thời gian này</td></tr>` :
+                imports.map(i => `
+                    <tr>
+                        <td>${i.import_date || ''}</td>
+                        <td>${i.item_type || ''}</td>
+                        <td><b>${i.brand}</b></td>
+                        <td>${i.item_name || ''}</td>
+                        <td><code>${i.part_code || ''}</code></td>
+                        <td>${i.quantity} ${i.unit || 'Cái'}</td>
+                        <td>${Number(i.import_price).toLocaleString()}đ</td>
+                        <td class="text-danger fw-bold">${(Number(i.import_price) * Number(i.quantity)).toLocaleString()}đ</td>
+                    </tr>
+                `).join('');
         }
 
         function exportReportExcel() {
             const wb = XLSX.utils.book_new();
-            const data = [
+            const summaryData = [
                 { "Chỉ tiêu": "Tổng Doanh Thu", "Giá trị (VNĐ)": cachedReport.totalRevenue || 0 },
-                { "Chỉ tiêu": "Giá Vốn Hàng Bán", "Giá trị (VNĐ)": cachedReport.totalImportSold || 0 },
-                { "Chỉ tiêu": "Chi Phí Thường Xuyên", "Giá trị (VNĐ)": cachedReport.totalExpense || 0 },
+                { "Chỉ tiêu": "Tổng Vốn Hàng Bán", "Giá trị (VNĐ)": cachedReport.totalImportSold || 0 },
+                { "Chỉ tiêu": "Tổng Vốn Nhập Kho", "Giá trị (VNĐ)": cachedReport.totalImportInventoryCost || 0 },
+                { "Chỉ tiêu": "Doanh Thu - Tiền mặt", "Giá trị (VNĐ)": cachedReport.revenueByMethod?.['Tiền mặt'] || 0 },
+                { "Chỉ tiêu": "Doanh Thu - Chuyển khoản", "Giá trị (VNĐ)": cachedReport.revenueByMethod?.['Chuyển khoản'] || 0 },
+                { "Chỉ tiêu": "Doanh Thu - Công nợ", "Giá trị (VNĐ)": cachedReport.revenueByMethod?.['Công nợ'] || 0 },
                 { "Chỉ tiêu": "Lợi Nhuận Thuần", "Giá trị (VNĐ)": cachedReport.netProfit || 0 }
             ];
-            const ws = XLSX.utils.json_to_sheet(data);
-            
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for (let R = range.s.r; R <= range.e.r; ++R) {
-                for (let C = range.s.c; C <= range.e.c; ++C) {
-                    const cell_address = XLSX.utils.encode_cell({r: R, c: C});
-                    if(!ws[cell_address]) continue;
-                    ws[cell_address].s = {
-                        border: {
-                            top: { style: "thin", color: { rgb: "000000" } },
-                            bottom: { style: "thin", color: { rgb: "000000" } },
-                            left: { style: "thin", color: { rgb: "000000" } },
-                            right: { style: "thin", color: { rgb: "000000" } }
-                        }
-                    };
-                }
-            }
-
-            XLSX.utils.book_append_sheet(wb, ws, "BaoCao_DoanhThu");
-            XLSX.writeFile(wb, "BaoCao_PhuTung_OTo.xlsx");
+            const ws = XLSX.utils.json_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, ws, "TongQuan_DoanhThu");
+            XLSX.writeFile(wb, "BaoCao_DoanhThu_PhuTung.xlsx");
         }
 
         async function loadUsers() {
